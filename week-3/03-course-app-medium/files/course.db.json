@@ -1,0 +1,1 @@
+{"id":3,"courses":[{"id":1,"title":"React JS Beginner course","description":"A beginner course for React JS","price":100,"imageLink":"https://dummy-image-link.com","published":true},{"id":2,"title":"React JS Full course","description":"Advanced course for React JS","price":500,"imageLink":"https://dummy-image-link.com","published":true}]}
