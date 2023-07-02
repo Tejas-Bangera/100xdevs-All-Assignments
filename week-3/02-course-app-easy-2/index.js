@@ -38,28 +38,40 @@ app.post("/admin/signup", (req, res) => {
   // res.status(201).json(newAdmin);
 });
 
-/**
- * __Function to validate login credentials of an Admin/User__
- * @param {*} req
- * @param {*} arr
- * @returns `true` if login credentials are valid else `false`
- */
-function validateLogin(req, arr) {
+function adminAuthentication(req, res, next) {
   const { username, password } = req.headers;
   // Validate login credentials
-  const user = arr.find((user) => user.username === username);
+  const admin = ADMINS.find((admin) => admin.username === username);
 
-  if (!user || user.password !== password) return;
+  if (!admin || admin.password !== password)
+    return res.status(401).json({ message: "Invalid login credentials" });
 
-  return user;
+  req.user = admin;
+  next();
 }
 
-app.post("/admin/login", (req, res) => {
-  // logic to log in admin
-  const user = validateLogin(req, ADMINS);
+/**
+ * __Function to validate login credentials of an User__
+ * @param {*} req Request
+ * @param {*} res Response
+ * @param {*} next Next
+ * @returns Response status `401` if login credentials are invalid
+ */
+function userAuthentication(req, res, next) {
+  const { username, password } = req.headers;
+  // Validate login credentials
+  const user = USERS.find((user) => user.username === username);
 
-  if (!user)
+  if (!user || user.password !== password)
     return res.status(401).json({ message: "Invalid login credentials" });
+
+  req.user = user;
+  next();
+}
+
+app.post("/admin/login", adminAuthentication, (req, res) => {
+  // logic to log in admin
+  const user = req.user;
 
   // Generate JWT Token
   const token = generateJWT(user);
@@ -117,13 +129,14 @@ app.put("/admin/courses/:courseId", validateJWT, (req, res) => {
   if (courseIndex === -1)
     return res.status(404).json({ message: `Course with id ${id} not found!` });
 
-  const course = COURSES[courseIndex];
-  const updatedCourse = {
-    ...course,
-    ...req.body,
-  };
+  Object.assign(COURSES[courseIndex], req.body);
+  // const course = COURSES[courseIndex];
+  // const updatedCourse = {
+  //   ...course,
+  //   ...req.body,
+  // };
 
-  COURSES[courseIndex] = updatedCourse;
+  // COURSES[courseIndex] = updatedCourse;
 
   res.json({ message: "Course updated successfully" });
 });
@@ -150,12 +163,9 @@ app.post("/users/signup", (req, res) => {
   res.json({ message: "User created successfully", token });
 });
 
-app.post("/users/login", (req, res) => {
+app.post("/users/login", userAuthentication, (req, res) => {
   // logic to log in user
-  if (!validateLogin(req, USERS))
-    return res.status(401).json({ message: "Invalid login credentials" });
-
-  const token = generateJWT(newUser);
+  const token = generateJWT(req.user);
 
   res.json({ message: "Logged in successfully", token });
 });
@@ -163,7 +173,7 @@ app.post("/users/login", (req, res) => {
 app.get("/users/courses", validateJWT, (req, res) => {
   // logic to list all courses
 
-  res.json({ courses: COURSES });
+  res.json({ courses: COURSES.filter((course) => course.published) });
 });
 
 app.post("/users/courses/:courseId", validateJWT, (req, res) => {
@@ -172,7 +182,9 @@ app.post("/users/courses/:courseId", validateJWT, (req, res) => {
 
   const id = Number(req.params.courseId);
 
-  const courseIndex = COURSES.findIndex((course) => course.id === id);
+  const courseIndex = COURSES.findIndex(
+    (course) => course.id === id && course.published
+  );
 
   if (courseIndex === -1)
     return res.status(404).json({ message: `Course with id ${id} not found!` });
@@ -193,5 +205,5 @@ app.get("/users/purchasedCourses", validateJWT, (req, res) => {
 });
 
 app.listen(3000, () => {
-  console.log("https://localhost:3000");
+  console.log("http://localhost:3000");
 });

@@ -46,45 +46,68 @@ app.post("/admin/signup", (req, res) => {
 });
 
 /**
- * __Function to validate login credentials of an Admin/User__
- * @param {*} req
- * @param {*} arr
- * @returns `true` if login credentials are valid else `false`
+ * __Function to validate login credentials of an Admin__
+ * @param {*} req Request
+ * @param {*} res Response
+ * @param {*} next Next
+ * @returns Response status `401` if login credentials are invalid
  */
-function validateLogin(req, arr) {
+function adminAuthentication(req, res, next) {
   const { username, password } = req.headers;
   // Validate login credentials
-  const user = arr.find((user) => user.username === username);
+  fs.readFile("./files/admin.db.json", "utf-8", (err, data) => {
+    if (err) return res.sendStatus(500);
 
-  if (!user || user.password !== password) return;
+    const admins = JSON.parse(data).admins;
+    const admin = admins.find((admin) => admin.username === username);
 
-  return user;
+    if (!admin || admin.password !== password)
+      return res.status(401).json({ message: "Invalid login credentials" });
+
+    req.user = admin;
+    next();
+  });
+}
+
+/**
+ * __Function to validate login credentials of an User__
+ * @param {*} req Request
+ * @param {*} res Response
+ * @param {*} next Next
+ * @returns Response status `401` if login credentials are invalid
+ */
+function userAuthentication(req, res, next) {
+  const { username, password } = req.headers;
+  // Validate login credentials
+  fs.readFile("./files/user.db.json", "utf-8", (err, data) => {
+    if (err) return res.sendStatus(500);
+
+    const users = JSON.parse(data).users;
+    const user = users.find((user) => user.username === username);
+
+    if (!user || user.password !== password)
+      return res.status(401).json({ message: "Invalid login credentials" });
+
+    req.user = user;
+    next();
+  });
 }
 
 // Admin Login
-app.post("/admin/login", (req, res) => {
+app.post("/admin/login", adminAuthentication, (req, res) => {
   // logic to log in admin
-  fs.readFile("./files/admin.db.json", "utf-8", (err, data) => {
-    if (err) return res.status(500).send(err);
 
-    const admins = JSON.parse(data).admins;
-    const user = validateLogin(req, admins);
+  // Generate JWT Token
+  const token = generateJWT(req.user);
 
-    if (!user)
-      return res.status(401).json({ message: "Invalid login credentials" });
-
-    // Generate JWT Token
-    const token = generateJWT(user);
-
-    res.json({ message: "Logged in successfully", token });
-  });
+  res.json({ message: "Logged in successfully", token });
 });
 
 /**
  * __Middleware function to handle JWT verification__
- * @param {*} req
- * @param {*} res
- * @param {*} next
+ * @param {*} req Request
+ * @param {*} res Response
+ * @param {*} next Next
  */
 function validateJWT(req, res, next) {
   const token = req.headers.authorization?.split(" ")[1];
@@ -151,13 +174,14 @@ app.put("/admin/courses/:courseId", validateJWT, (req, res) => {
         .status(404)
         .json({ message: `Course with id ${courseId} not found!` });
 
-    const course = courses[courseIndex];
-    const updatedCourse = {
-      ...course,
-      ...req.body,
-    };
+    Object.assign(courses[courseIndex], req.body);
+    // const course = courses[courseIndex];
+    // const updatedCourse = {
+    //   ...course,
+    //   ...req.body,
+    // };
 
-    courses[courseIndex] = updatedCourse;
+    // courses[courseIndex] = updatedCourse;
 
     fs.writeFile(
       "./files/course.db.json",
@@ -210,22 +234,11 @@ app.post("/users/signup", (req, res) => {
 });
 
 // User Login
-app.post("/users/login", (req, res) => {
+app.post("/users/login", userAuthentication, (req, res) => {
   // logic to log in user
-  fs.readFile("./files/user.db.json", "utf-8", (err, data) => {
-    if (err) return res.status(500).send(err);
+  const token = generateJWT(req.user);
 
-    const users = JSON.parse(data).users;
-
-    const user = validateLogin(req, users);
-
-    if (!user)
-      return res.status(401).json({ message: "Invalid login credentials" });
-
-    const token = generateJWT(user);
-
-    res.json({ message: "Logged in successfully", token });
-  });
+  res.json({ message: "Logged in successfully", token });
 });
 
 // User get all courses
@@ -237,7 +250,7 @@ app.get("/users/courses", validateJWT, (req, res) => {
 
     const courses = JSON.parse(data).courses;
 
-    res.json({ courses });
+    res.json({ courses: courses.filter((course) => course.published) });
   });
 });
 
@@ -258,7 +271,9 @@ app.post("/users/courses/:courseId", validateJWT, (req, res) => {
       if (err) return res.status(500).send(err);
 
       const courses = JSON.parse(courseData).courses;
-      const courseIndex = courses.findIndex((course) => course.id === courseId);
+      const courseIndex = courses.findIndex(
+        (course) => course.id === courseId && course.published
+      );
 
       if (courseIndex === -1)
         return res
@@ -300,5 +315,5 @@ app.get("/users/purchasedCourses", validateJWT, (req, res) => {
 });
 
 app.listen(3000, () => {
-  console.log("https://localhost:3000");
+  console.log("http://localhost:3000");
 });

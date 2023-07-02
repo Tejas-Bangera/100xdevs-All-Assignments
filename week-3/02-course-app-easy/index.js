@@ -23,34 +23,49 @@ app.post("/admin/signup", (req, res) => {
 });
 
 /**
- * __Function to validate login credentials of an Admin/User__
- * @param {*} req
- * @param {*} arr
- * @returns `true` if login credentials are valid else `false`
+ * __Function to validate login credentials of an Admin__
+ * @param {*} req Request
+ * @param {*} res Response
+ * @param {*} next Next
+ * @returns Response status `401` if login credentials are invalid
  */
-function validateLogin(req, arr) {
+function adminAuthentication(req, res, next) {
   const { username, password } = req.headers;
   // Validate login credentials
-  const user = arr.find((user) => user.username === username);
+  const admin = ADMINS.find((admin) => admin.username === username);
 
-  if (!user || user.password !== password) return;
-
-  return user;
-}
-
-app.post("/admin/login", (req, res) => {
-  // logic to log in admin
-  if (!validateLogin(req, ADMINS))
+  if (!admin || admin.password !== password)
     return res.status(401).json({ message: "Invalid login credentials" });
 
+  next();
+}
+
+/**
+ * __Function to validate login credentials of an User__
+ * @param {*} req Request
+ * @param {*} res Response
+ * @param {*} next Next
+ * @returns Response status `401` if login credentials are invalid
+ */
+function userAuthentication(req, res, next) {
+  const { username, password } = req.headers;
+  // Validate login credentials
+  const user = USERS.find((user) => user.username === username);
+
+  if (!user || user.password !== password)
+    return res.status(401).json({ message: "Invalid login credentials" });
+
+  req.user = user;
+  next();
+}
+
+app.post("/admin/login", adminAuthentication, (req, res) => {
+  // logic to log in admin
   res.json({ message: "Logged in successfully" });
 });
 
-app.post("/admin/courses", (req, res) => {
+app.post("/admin/courses", adminAuthentication, (req, res) => {
   // logic to create a course
-  // Validate session login credentials
-  if (!validateLogin(req, ADMINS))
-    return res.status(401).json({ message: "Invalid login credentials" });
 
   const { title, description, price, imageLink, published } = req.body;
   const newCourse = {
@@ -68,11 +83,8 @@ app.post("/admin/courses", (req, res) => {
     .json({ message: "Course created successfully", courseId: newCourse.id });
 });
 
-app.put("/admin/courses/:courseId", (req, res) => {
+app.put("/admin/courses/:courseId", adminAuthentication, (req, res) => {
   // logic to edit a course
-  // Validate session login credentials
-  if (!validateLogin(req, ADMINS))
-    return res.status(401).json({ message: "Invalid login credentials" });
 
   const id = Number(req.params.courseId);
 
@@ -81,23 +93,20 @@ app.put("/admin/courses/:courseId", (req, res) => {
   if (courseIndex === -1)
     return res.status(404).json({ message: `Course with id ${id} not found!` });
 
-  const course = COURSES[courseIndex];
-  const updatedCourse = {
-    ...course,
-    ...req.body,
-  };
+  Object.assign(COURSES[courseIndex], req.body);
+  // const course = COURSES[courseIndex];
+  // const updatedCourse = {
+  //   ...course,
+  //   ...req.body,
+  // };
 
-  COURSES[courseIndex] = updatedCourse;
+  // COURSES[courseIndex] = updatedCourse;
 
   res.json({ message: "Course updated successfully" });
 });
 
-app.get("/admin/courses", (req, res) => {
+app.get("/admin/courses", adminAuthentication, (req, res) => {
   // logic to get all courses
-  // Validate session login credentials
-  if (!validateLogin(req, ADMINS))
-    return res.status(401).json({ message: "Invalid login credentials" });
-
   res.json({ courses: COURSES });
 });
 
@@ -116,30 +125,20 @@ app.post("/users/signup", (req, res) => {
   // res.status(201).json(newAdmin);
 });
 
-app.post("/users/login", (req, res) => {
+app.post("/users/login", userAuthentication, (req, res) => {
   // logic to log in user
-  if (!validateLogin(req, USERS))
-    return res.status(401).json({ message: "Invalid login credentials" });
-
   res.json({ message: "Logged in successfully" });
 });
 
-app.get("/users/courses", (req, res) => {
+app.get("/users/courses", userAuthentication, (req, res) => {
   // logic to list all courses
-  // Validate session login credentials
-  if (!validateLogin(req, USERS))
-    return res.status(401).json({ message: "Invalid login credentials" });
-
   res.json({ courses: COURSES });
 });
 
-app.post("/users/courses/:courseId", (req, res) => {
+app.post("/users/courses/:courseId", userAuthentication, (req, res) => {
   // logic to purchase a course
   // Validate session login credentials
-  const user = validateLogin(req, USERS);
-
-  if (!user)
-    return res.status(401).json({ message: "Invalid login credentials" });
+  const user = req.user;
 
   const id = Number(req.params.courseId);
 
@@ -152,13 +151,9 @@ app.post("/users/courses/:courseId", (req, res) => {
   res.json({ message: "Course purchased successfully" });
 });
 
-app.get("/users/purchasedCourses", (req, res) => {
+app.get("/users/purchasedCourses", userAuthentication, (req, res) => {
   // logic to view purchased courses
-  // Validate session login credentials
-  const user = validateLogin(req, USERS);
-
-  if (!user)
-    return res.status(401).json({ message: "Invalid login credentials" });
+  const user = req.user;
 
   res.json({
     purchasedCourses: user.purchasedCourses.map((id) =>
@@ -168,5 +163,5 @@ app.get("/users/purchasedCourses", (req, res) => {
 });
 
 app.listen(3000, () => {
-  console.log("https://localhost:3000");
+  console.log("http://localhost:3000");
 });
