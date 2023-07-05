@@ -33,7 +33,7 @@ const User = mongoose.model("User", userSchema);
 const Course = mongoose.model("Course", courseSchema);
 
 mongoose.connect(
-  "mongodb+srv://tejas-bangera:Mongodbpassw0rd@cluster0.duuaega.mongodb.net/CourseWebsiteDB"
+  "mongodb+srv://<username>:<password>@cluster0.duuaega.mongodb.net/CourseWebsiteDB"
 );
 
 /**
