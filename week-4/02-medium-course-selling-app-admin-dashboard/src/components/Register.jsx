@@ -1,16 +1,27 @@
-import React from "react";
+import { useState } from "react";
+import SignIn from "./SignIn";
 
 /// File is incomplete. You need to add input boxes to take input for users to register.
 function Register() {
-    const [email, setEmail] = React.useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-    return <div>
-        <h1>Register to the website</h1>
-        <br/>
-        <input type={"text"} onChange={e => setEmail(e.target.value)} />
-        <br/>
-        Already a user? <a href="/login">Login</a>
-    </div>
+  function handleSubmit(event) {
+    event.preventDefault();
+    console.log("Email: " + email);
+    console.log("Password: " + password);
+    console.log("Registeration successful!");
+    window.location.href = "/courses";
+  }
+
+  return (
+    <SignIn
+      setEmail={setEmail}
+      setPassword={setPassword}
+      handleSubmit={handleSubmit}
+      action={"register"}
+    />
+  );
 }
 
 export default Register;
