@@ -33,7 +33,6 @@ const SignIn = ({ setEmail, setPassword, handleSubmit, action }) => {
             id="email"
             label="Email Address"
             name="email"
-            autoComplete="email"
             autoFocus
             onChange={(event) => setEmail(event.target.value)}
           />

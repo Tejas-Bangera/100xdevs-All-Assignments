@@ -5,8 +5,8 @@ import CoursesHero from "./CoursesHero";
 const Courses = () => {
   return (
     <>
-      {/* Navbar */}
-      <Navbar />
+      {/* Navbar
+      <Navbar /> */}
 
       {/* Hero section */}
       <main>

@@ -8,18 +8,30 @@ import {
   Grid,
   Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 function ShowCourses() {
-  const [courses, setCourses] = useState([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  const [courses, setCourses] = useState([]);
+
+  useEffect(() => {
+    axios
+      .get("http://localhost:3000/admin/courses", {
+        headers: {
+          Authorization: localStorage.getItem("token"),
+        },
+      })
+      .then((response) => setCourses(response.data.courses))
+      .catch((error) => console.log(error));
+  }, []);
 
   // Add code to fetch courses from the server
   // and set it in the courses state variable.
   return (
     <Container sx={{ py: 8 }} maxWidth="lg">
       <Grid container spacing={4}>
-        {courses.map((card) => (
-          <Grid item key={card} xs={12} sm={6} md={4} lg={3}>
+        {courses.map((course) => (
+          <Grid item key={course.id} xs={12} sm={6} md={4} lg={3}>
             <Card
               sx={{
                 height: "100%",
@@ -33,21 +45,31 @@ function ShowCourses() {
                   // 16:9
                   pt: "56.25%",
                 }}
-                image="https://source.unsplash.com/random?tech"
+                image={course.imageLink}
               />
               <CardContent sx={{ flexGrow: 1 }}>
                 <Typography gutterBottom variant="h5" component="h2">
-                  Heading
+                  {course.title}
                 </Typography>
-                <Typography>
-                  This is a media card. You can use this section to describe the
-                  content.
-                </Typography>
+                <Typography>{course.description}</Typography>
               </CardContent>
               <CardActions sx={{ px: 2, pb: 2 }}>
-                <Button size="small" variant="outlined" color="secondary">
-                  Edit
-                </Button>
+                <Grid container>
+                  <Grid
+                    item
+                    flexGrow={1}
+                    display="flex"
+                    alignItems="flex-end"
+                    justifyContent="space-between"
+                  >
+                    <Button size="small" variant="outlined" color="secondary">
+                      Edit
+                    </Button>
+                    <Typography fontSize="15px" fontWeight="bold">
+                      Rs.{course.price}
+                    </Typography>
+                  </Grid>
+                </Grid>
               </CardActions>
             </Card>
           </Grid>
