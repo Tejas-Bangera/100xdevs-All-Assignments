@@ -4,8 +4,10 @@ const app = express();
 const jwt = require("jsonwebtoken");
 
 const fs = require("fs");
+const cors = require("cors");
 
 app.use(express.json());
+app.use(cors());
 
 const secretKey = "my-secret-key";
 
@@ -121,6 +123,11 @@ function validateJWT(req, res, next) {
     next();
   });
 }
+
+// Admin validate jwt
+app.get("/admin/validatejwt", validateJWT, (req, res) => {
+  res.json({ message: "JWT Validated!", username: req.user.username });
+});
 
 // Admin create course
 app.post("/admin/courses", validateJWT, (req, res) => {
