@@ -1,6 +1,6 @@
 # BackRow Admin Dashboard
 
-![BackRow Admin Dashboard](./screenshots/image-1.png)
+![BackRow Admin Dashboard](./screenshots/image.png)
 
 - BackRow is a basic `REACT` project developed to manage courses in the website as an Admin.
 - For now the website has the following features for the Admin,
